@@ -25,16 +25,18 @@ Plugin.create(:meshitero_uploader) do
 
   # 投稿する
   def post_image
-    notice 'start'
     prepare
+
+    return if @meshitero_images.empty?
+    notice "start: #{Time.now.to_s}"
 
     threads = []
     # 画像を4件ごとに処理
     @meshitero_images.each_slice(4) do |images|
-      threads << Thread.new {
+      threads << Thread.new(images) { |imgs|
         # キーをファイル名, 値をIOとするハッシュを生成
         list = Hash.new
-        images.each { |i| list[File.basename(i)] = File.open(i) }
+        imgs.each { |img| list[File.basename(img)] = File.open(img) }
 
         msg = "[画像アップロードテスト] #{File.basename(list.keys.first)}, etc…"
         Service.primary.update(message: msg,
@@ -50,10 +52,13 @@ Plugin.create(:meshitero_uploader) do
       }
     end
 
-    threads.each { |t| t.run }
+    threads.each { |t| t.join }
   end
 
+  # 勝手に開始させる
+  post_image
 
+  # 手動で確認するとき用
   command(:post_meshitero,
           name: '飯テロ画像投稿',
           condition: lambda { |_| true },
