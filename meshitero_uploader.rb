@@ -19,13 +19,15 @@ Plugin.create(:meshitero_uploader) do
 
   # 投稿した画像のURLをyaml形式で書き出す
   def write_log(data)
-    File.open(File.expand_path('./done.yml'), 'a+') { |f| f.puts(data) }
+    File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| f.puts(data) }
   end
 
 
   # 投稿する
   def post_image
     notice 'start'
+    prepare
+
     threads = []
     # 画像を4件ごとに処理
     @meshitero_images.each_slice(4) do |images|
@@ -35,8 +37,8 @@ Plugin.create(:meshitero_uploader) do
         images.each { |i| list[File.basename(i)] = File.open(i) }
 
         msg = "[画像アップロードテスト] #{File.basename(list.keys.first)}, etc…"
-        Service.primary.post(message: msg,
-                             mediaiolist: list.values).next { |res|
+        Service.primary.update(message: msg,
+                               mediaiolist: list.values).next { |res|
           # openしていたファイルをclose
           list.each_value { |i| i.close }
           # レスポンスから画像URLを取得してyaml形式で書き出し
@@ -58,7 +60,6 @@ Plugin.create(:meshitero_uploader) do
           visible: true,
           role: :postbox
   ) do |_|
-    prepare
     post_image
   end
 
