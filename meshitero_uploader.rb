@@ -4,8 +4,7 @@ require 'json'
 
 Plugin.create(:meshitero_uploader) do
 
-  @interval = 5 * 60 # 15分
-
+  # 投稿する画像を取得
   def prepare
     # 投稿済みの一覧の管理
     begin
@@ -17,6 +16,7 @@ Plugin.create(:meshitero_uploader) do
   end
 
 
+  # 投稿した画像のURLをyaml形式で書き出す
   def write_log(data)
     File.open('done.yml', 'a') do |f|
       f.puts('---') unless f.readlines[0].equal?('---')
@@ -25,7 +25,8 @@ Plugin.create(:meshitero_uploader) do
   end
 
 
-  def start_post
+  # 投稿する
+  def post_image
     puts 'start'
     threads = []
     @meshitero_images.each_slice(4) do |images|
@@ -54,7 +55,7 @@ Plugin.create(:meshitero_uploader) do
           role: :postbox
   ) do |_|
     prepare
-    start_post
+    post_image
   end
 
 end

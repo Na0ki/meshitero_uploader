@@ -1,9 +1,9 @@
 ---
 slug: :meshitero_uploader
 depends:
-  mikutter: 3.6.0-develop
+  mikutter: 3.5.0
   plugin: []
-version: '1.0'
+version: 0.0.1
 author: ahiru
 name: meshitero_uploader
 description: あひる焼くなの飯テロ画像アップロード用プラグイン
