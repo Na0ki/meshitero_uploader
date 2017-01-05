@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-require 'json'
 
 Plugin.create(:meshitero_uploader) do
 
@@ -18,6 +17,7 @@ Plugin.create(:meshitero_uploader) do
 
 
   # 投稿した画像のURLをyaml形式で書き出す
+  # @param [String] 書き出すデータ
   def write_log(data)
     File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| f.puts(data) }
   end
@@ -38,25 +38,28 @@ Plugin.create(:meshitero_uploader) do
         list = Hash.new
         imgs.each { |img| list[File.basename(img)] = File.open(img) }
 
-        msg = "[画像アップロードテスト] #{File.basename(list.keys.first)}, etc…"
+        msg = "[飯テロ画像] #{File.basename(list.keys.first)}, etc…"
         Service.primary.update(message: msg,
                                mediaiolist: list.values).next { |res|
           # openしていたファイルをclose
-          list.each_value { |i| i.close }
+          list.each_value { |file| file.close }
+
           # レスポンスから画像URLを取得してyaml形式で書き出し
           res.entity.to_a.each do |entity|
-            puts "image uri: #{entity[:media_url_https]}"
+            notice "image uri: #{entity[:media_url_https]}"
             write_log("- #{entity[:media_url_https]}")
           end
         }.trap { |e| error e }
       }
     end
 
-    threads.each { |t| t.join }
+    threads.each { |thread| thread.join }
   end
+
 
   # 勝手に開始させる
   post_image
+
 
   # 手動で確認するとき用
   command(:post_meshitero,
