@@ -30,35 +30,28 @@ Plugin.create(:meshitero_uploader) do
     return if @meshitero_images.empty?
     notice "start: #{Time.now.to_s}"
 
-    threads = []
     # 画像を4件ごとに処理
-    @meshitero_images.each_slice(4) do |images|
-      threads << Thread.new(images) { |imgs|
+    @meshitero_images.each_slice(4).inject(Delayer::Deferred.new) do |promise, images|
+      promise.next do
         # キーをファイル名, 値をIOとするハッシュを生成
-        list = Hash.new
-        imgs.each { |img| list[File.basename(img)] = File.open(img) }
+        list = images.map { |img| File.open(img) }
 
-        msg = "[飯テロ画像] #{File.basename(list.keys.first)}, etc…"
+        msg = "[飯テロ画像] #{File.basename(File.basename(images.first))}, etc…"
         Service.primary.update(message: msg,
-                               mediaiolist: list.values).next { |res|
-          # openしていたファイルをclose
-          list.each_value { |file| file.close }
-
+                               mediaiolist: list).next { |res|
           # レスポンスから画像URLを取得してyaml形式で書き出し
           res.entity.to_a.each do |entity|
             notice "image uri: #{entity[:media_url_https]}"
             write_log("- #{entity[:media_url_https]}")
           end
-        }.trap { |e| error e }
-      }
+        }
+      end
     end
-
-    threads.each { |thread| thread.join }
   end
 
 
   # 勝手に開始させる
-  post_image
+  post_image.trap{|err| error err }
 
 
   # 手動で確認するとき用
@@ -68,7 +61,7 @@ Plugin.create(:meshitero_uploader) do
           visible: true,
           role: :postbox
   ) do |_|
-    post_image
+    post_image.trap{|err| error err }
   end
 
 end
