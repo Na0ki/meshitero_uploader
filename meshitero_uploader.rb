@@ -7,7 +7,7 @@ Plugin.create(:meshitero_uploader) do
     # 投稿済みの一覧の管理
     begin
       meshitero_dir = File.join(__dir__, 'meshitero')
-      @meshitero_images = Dir.glob("#{meshitero_dir}/*")
+      @meshitero_images = Dir.glob("#{meshitero_dir}/*.*")
       # 3MB以上の画像は除外する
       @meshitero_images.delete_if { |image| File.stat(image).size > 3145728 }
     rescue => e
@@ -38,12 +38,15 @@ Plugin.create(:meshitero_uploader) do
 
         msg = "[飯テロ画像] #{File.basename(File.basename(images.first))}, etc…"
         Service.primary.update(message: msg,
-                               mediaiolist: list).next { |res|
+                               mediaiolist: list).next { |message|
           # レスポンスから画像URLを取得してyaml形式で書き出し
-          res.entity.to_a.each do |entity|
+          message.entity.to_a.each do |entity|
             notice "image uri: #{entity[:media_url_https]}"
             write_log("- #{entity[:media_url_https]}")
           end
+        }.next { |message|
+          Thread.new { sleep(60) }
+          message
         }
       end
     end
@@ -51,7 +54,7 @@ Plugin.create(:meshitero_uploader) do
 
 
   # 勝手に開始させる
-  post_image.trap{|err| error err }
+  # post_image.trap { |err| error err }
 
 
   # 手動で確認するとき用
@@ -61,7 +64,7 @@ Plugin.create(:meshitero_uploader) do
           visible: true,
           role: :postbox
   ) do |_|
-    post_image.trap{|err| error err }
+    post_image.trap { |err| error err }
   end
 
 end
