@@ -45,7 +45,7 @@ Plugin.create(:meshitero_uploader) do
             write_log("- #{entity[:media_url_https]}")
           end
         }.next { |message|
-          Thread.new { sleep(60) }
+          Thread.new { sleep(5*60) }
           message
         }
       end
