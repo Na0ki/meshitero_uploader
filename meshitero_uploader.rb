@@ -11,6 +11,7 @@ Plugin.create(:meshitero_uploader) do
       @meshitero_images = Dir.glob("#{meshitero_dir}/*.*")
       # 3MB以上の画像は除外する
       @meshitero_images.delete_if { |image| File.stat(image).size > 3145728 }
+      notice "number of images: #{@meshitero_images.length}"
     rescue => e
       error "Could not find dir: #{e}"
     end
@@ -37,8 +38,8 @@ Plugin.create(:meshitero_uploader) do
         # 画像ファイルIOの配列
         list = images.map { |img| File.open(img) }
 
-        msg = "[飯テロ画像] #{File.basename(File.basename(images.first))}, etc…"
-        Service.primary.update(message: msg,
+        # FIXME: 初回以降の投稿が実行されない（特にエラーは表示されない）
+        Service.primary.update(message: "[飯テロ画像] #{File.basename(images.first)}, etc…",
                                mediaiolist: list).next { |message|
           # レスポンスから画像URLを取得して配列に格納
           url_list = []
@@ -48,9 +49,8 @@ Plugin.create(:meshitero_uploader) do
           end
           # 配列のURLを書き出し
           write_log(url_list) unless url_list.empty?
-          notice 'result: ok'
           message
-        }.next { Thread.new { sleep(60) } }
+        }
       end
     end
   end
@@ -58,7 +58,7 @@ Plugin.create(:meshitero_uploader) do
 
   # 勝手に開始させる
   on_post_meshitero do
-    post_image.trap { |err| error err }
+    post_image.trap { |e| error e }
   end
 
 
