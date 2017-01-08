@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+require 'yaml'
 
 Plugin.create(:meshitero_uploader) do
 
@@ -17,9 +18,9 @@ Plugin.create(:meshitero_uploader) do
 
 
   # 投稿した画像のURLをyaml形式で書き出す
-  # @param [String] 書き出すデータ
+  # @param [Array] 書き出すデータ
   def write_log(data)
-    File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| f.puts(data) }
+    File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| YAML.dump(data, f) }
   end
 
 
@@ -33,28 +34,32 @@ Plugin.create(:meshitero_uploader) do
     # 画像を4件ごとに処理
     @meshitero_images.each_slice(4).inject(Delayer::Deferred.new) do |promise, images|
       promise.next do
-        # キーをファイル名, 値をIOとするハッシュを生成
+        # 画像ファイルIOの配列
         list = images.map { |img| File.open(img) }
 
         msg = "[飯テロ画像] #{File.basename(File.basename(images.first))}, etc…"
         Service.primary.update(message: msg,
                                mediaiolist: list).next { |message|
-          # レスポンスから画像URLを取得してyaml形式で書き出し
+          # レスポンスから画像URLを取得して配列に格納
+          url_list = []
           message.entity.to_a.each do |entity|
             notice "image uri: #{entity[:media_url_https]}"
-            write_log("- #{entity[:media_url_https]}")
+            url_list << entity[:media_url_https]
           end
-        }.next { |message|
-          Thread.new { sleep(5*60) }
+          # 配列のURLを書き出し
+          write_log(url_list) unless url_list.empty?
+          notice 'result: ok'
           message
-        }
+        }.next { Thread.new { sleep(60) } }
       end
     end
   end
 
 
   # 勝手に開始させる
-  # post_image.trap { |err| error err }
+  on_post_meshitero do
+    post_image.trap { |err| error err }
+  end
 
 
   # 手動で確認するとき用
@@ -64,7 +69,7 @@ Plugin.create(:meshitero_uploader) do
           visible: true,
           role: :postbox
   ) do |_|
-    post_image.trap { |err| error err }
+    post_image.trap { |e| error e }
   end
 
 end
