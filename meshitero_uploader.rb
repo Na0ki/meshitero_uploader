@@ -8,6 +8,8 @@ Plugin.create(:meshitero_uploader) do
     # 投稿済みの一覧の管理
     begin
       meshitero_dir = File.join(__dir__, 'meshitero')
+      Dir.mkdir(meshitero_dir) unless File.exist?(meshitero_dir)
+
       @meshitero_images = Dir.glob("#{meshitero_dir}/*.*")
       # 3MB以上の画像は除外する
       @meshitero_images.delete_if { |image| File.stat(image).size > 3145728 }
@@ -50,9 +52,6 @@ Plugin.create(:meshitero_uploader) do
           # 配列のURLを書き出し
           write_log(url_list) unless url_list.empty?
           message
-        }.next { |m|
-          Thread.new { sleep(60) }
-          m
         }
       end
     end
