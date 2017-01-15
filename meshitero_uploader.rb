@@ -31,7 +31,11 @@ Plugin.create(:meshitero_uploader) do
   def post_image
     prepare
 
-    return if @meshitero_images.empty?
+    if @meshitero_images.empty?
+      notice '飯テロ画像なんもねぇ'
+      return
+    end
+
     notice "start: #{Time.now.to_s}"
 
     # 画像を4件ごとに処理
