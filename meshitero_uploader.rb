@@ -23,7 +23,12 @@ Plugin.create(:meshitero_uploader) do
   # 投稿した画像のURLをyaml形式で書き出す
   # @param [Array] 書き出すデータ
   def write_log(data)
-    File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| YAML.dump(data, f) }
+    begin
+      File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| YAML.dump(data, f) }
+    rescue => e
+      error e
+      Delayer::Deferred.fail(e)
+    end
   end
 
 
@@ -45,8 +50,10 @@ Plugin.create(:meshitero_uploader) do
         list = images.map { |img| File.open(img) }
 
         # FIXME: 初回以降の投稿が実行されない（特にエラーは表示されない）
+        notice 'going to post images: %{list}' %{list: list}
         Service.primary.post(message: '[飯テロ画像] %{filename}, etc…' % {filename: File.basename(images.first)},
                              mediaiolist: list).next { |message|
+          notice 'post message: %{message}' % {message: message}
           # レスポンスから画像URLを取得して配列に格納
           url_list = []
           message.entity.to_a.each do |entity|
