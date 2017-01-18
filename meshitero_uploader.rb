@@ -63,6 +63,9 @@ Plugin.create(:meshitero_uploader) do
           # 配列のURLを書き出し
           write_log(url_list) unless url_list.empty?
           message
+        }.next { |m|
+          m
+          Thread.sleep(60)
         }
       end
     end
