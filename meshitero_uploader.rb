@@ -64,8 +64,8 @@ Plugin.create(:meshitero_uploader) do
           write_log(url_list) unless url_list.empty?
           message
         }.next { |m|
-          m
           Thread.sleep(60)
+          m
         }
       end
     end
