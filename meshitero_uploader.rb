@@ -20,24 +20,12 @@ Plugin.create(:meshitero_uploader) do
   end
 
 
-  # 投稿した画像のURLをyaml形式で書き出す
-  # @param [Array] 書き出すデータ
-  def write_log(data)
-    begin
-      File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| YAML.dump(data, f) }
-    rescue => e
-      error e
-      Delayer::Deferred.fail(e)
-    end
-  end
-
-
   # 投稿する
   def post_image
     prepare
 
     if @meshitero_images.empty?
-      notice '飯テロ画像なんもねぇ'
+      notice '飯テロ画像なんもねぇ…'
       return
     end
 
@@ -61,7 +49,11 @@ Plugin.create(:meshitero_uploader) do
             url_list << entity[:media_url_https]
           end
           # 配列のURLを書き出し
-          write_log(url_list) unless url_list.empty?
+          begin
+            File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| YAML.dump(url_list, f) } unless url_list.empty?
+          rescue => e
+            Delayer::Deferred.fail(e)
+          end
           message
         }.next { |m|
           Thread.new { sleep(60) }
