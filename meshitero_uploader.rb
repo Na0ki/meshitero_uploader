@@ -39,25 +39,25 @@ Plugin.create(:meshitero_uploader) do
 
         # FIXME: 初回以降の投稿が実行されない（特にエラーは表示されない）
         notice 'going to post images: %{list}' %{list: list}
+
         Service.primary.post(message: '[飯テロ画像] %{filename}, etc…' % {filename: File.basename(images.first)},
                              mediaiolist: list).next { |message|
           notice 'post message: %{message}' % {message: message}
+
           # レスポンスから画像URLを取得して配列に格納
           url_list = []
           message.entity.to_a.each do |entity|
-            notice "image uri: #{entity[:media_url_https]}"
             url_list << entity[:media_url_https]
           end
+
           # 配列のURLを書き出し
           begin
-            File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| YAML.dump(url_list, f) } unless url_list.empty?
+            File.open(File.join(__dir__, 'done.yml'), 'a+') { |f| YAML.dump(url_list, f) }
           rescue => e
             Delayer::Deferred.fail(e)
           end
-          message
-        }.next { |m|
-          Thread.new { sleep(60) }
-          m
+
+          notice "post done: #{url_list}"
         }
       end
     end
