@@ -77,7 +77,11 @@ Plugin.create(:meshitero_uploader) do
           visible: true,
           role: :postbox
   ) do |_|
-    post_image.trap { |e| error e }
+    post_image.trap { |e|
+      error e
+    }.next {
+      puts 'upload has been done!'
+    }
   end
 
 end
