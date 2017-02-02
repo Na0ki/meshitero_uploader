@@ -38,6 +38,8 @@ Plugin.create(:meshitero_uploader) do
         list = images.map { |img| File.open(img) }
 
         # FIXME: 初回以降の投稿が実行されない（特にエラーは表示されない）
+        # TODO: Deferred.when() の動作確認をする
+        # メモ: service.post() の返す Deferred オブジェクトを確認する
         notice 'going to post images: %{list}' %{list: list}
 
         Service.primary.post(message: '[飯テロ画像] %{filename}, etc…' % {filename: File.basename(images.first)},
